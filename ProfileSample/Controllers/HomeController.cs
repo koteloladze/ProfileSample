@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Web;
+using System.Threading.Tasks;
 using System.Web.Mvc;
 using ProfileSample.DAL;
 using ProfileSample.Models;
@@ -15,29 +14,28 @@ namespace ProfileSample.Controllers
         {
             var context = new ProfileSampleEntities();
 
-            var sources = context.ImgSources.Take(20).Select(x => x.Id);
-            
+            var sources = context.ImgSources.Take(20).AsEnumerable();
+
             var model = new List<ImageModel>();
 
-            foreach (var id in sources)
+            foreach (var imgSource in sources)
             {
-                var item = context.ImgSources.Find(id);
-
                 var obj = new ImageModel()
                 {
-                    Name = item.Name,
-                    Data = item.Data
+                    Name = imgSource.Name,
+                    Data = imgSource.Data
                 };
 
                 model.Add(obj);
-            } 
+            }
 
             return View(model);
         }
 
-        public ActionResult Convert()
+        public async Task<ActionResult> Convert()
         {
             var files = Directory.GetFiles(Server.MapPath("~/Content/Img"), "*.jpg");
+            var imgList = new List<ImgSource>();
 
             using (var context = new ProfileSampleEntities())
             {
@@ -47,7 +45,7 @@ namespace ProfileSample.Controllers
                     {
                         byte[] buff = new byte[stream.Length];
 
-                        stream.Read(buff, 0, (int) stream.Length);
+                        await stream.ReadAsync(buff, 0, (int)stream.Length);
 
                         var entity = new ImgSource()
                         {
@@ -55,10 +53,12 @@ namespace ProfileSample.Controllers
                             Data = buff,
                         };
 
-                        context.ImgSources.Add(entity);
-                        context.SaveChanges();
+                        imgList.Add(entity);
                     }
-                } 
+                }
+
+                context.ImgSources.AddRange(imgList);
+                context.SaveChanges();
             }
 
             return RedirectToAction("Index");
