@@ -44,7 +44,7 @@ namespace ProfileSample.Controllers
                     {
                         byte[] buff = new byte[stream.Length];
 
-                        stream.Read(buff, 0, (int)stream.Length);
+                        stream.ReadAsync(buff, 0, (int)stream.Length);
 
                         var entity = new ImgSource()
                         {
